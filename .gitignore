@@ -1,0 +1,8 @@
+.DS_Store
+node_modules
+logs
+public/css
+public/js
+public/tpls
+npm-debug.log
+.idea

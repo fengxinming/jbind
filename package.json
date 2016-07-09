@@ -1,0 +1,39 @@
+{
+  "name": "master",
+  "description": "javascript framework",
+  "version": "1.0.0",
+  "main": "dist/master.js",
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {
+    "co": "^4.6.0",
+    "glob-watcher": "^3.0.0",
+    "gulp-jshint": "^2.0.1",
+    "jshint": "^2.9.2",
+    "jshint-stylish": "^2.2.0",
+    "rollup": "^0.33.0",
+    "rollup-plugin-babel": "^2.6.1",
+    "vinyl-fs": "^2.4.3"
+  },
+  "scripts": {
+    "test": "mocha",
+    "build": "node ./tasks/npm/build.js",
+    "dev": "node ./tasks/npm/dev.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fengxinming/master.git"
+  },
+  "keywords": [
+    "master",
+    "master-js",
+    "master.js"
+  ],
+  "author": "fengxinming",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fengxinming/master/issues"
+  },
+  "homepage": "https://github.com/fengxinming/master#readme"
+}
