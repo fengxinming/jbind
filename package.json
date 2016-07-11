@@ -1,8 +1,8 @@
 {
-  "name": "master",
+  "name": "jbind",
   "description": "javascript framework",
   "version": "1.0.0",
-  "main": "dist/master.js",
+  "main": "dist/jbind.js",
   "directories": {
     "test": "test"
   },
@@ -23,17 +23,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fengxinming/master.git"
+    "url": "git+https://github.com/fengxinming/jbind.git"
   },
   "keywords": [
-    "master",
-    "master-js",
-    "master.js"
+    "jbind",
+    "jbind-js",
+    "jbind.js"
   ],
   "author": "fengxinming",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/fengxinming/master/issues"
+    "url": "https://github.com/fengxinming/jbind/issues"
   },
-  "homepage": "https://github.com/fengxinming/master#readme"
+  "homepage": "https://github.com/fengxinming/jbind#readme"
 }
