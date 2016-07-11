@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const rollup = require('rollup');
+const npm = require('rollup-plugin-node-resolve');
 
 const version = process.env.VERSION || require('../../package.json').version
 
@@ -31,7 +32,8 @@ function write(dest, code) {
 }
 
 rollup.rollup({
-    entry: 'src/index.js'
+    entry: 'src/index.js',
+    external: ['jquery']
   })
   .then(function(bundle) {
     return write('dist/jbind.js', bundle.generate({
@@ -43,7 +45,10 @@ rollup.rollup({
       // umd – 适用于CommonJs和AMD风格通用模式
       format: 'umd',
       banner: banner,
-      moduleName: 'Master'
+      moduleName: 'Jbind',
+      globals: {
+        jquery: 'jquery'
+      }
     }).code)
   })
   .catch(function(e) {

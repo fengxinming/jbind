@@ -4,10 +4,12 @@
  * Released under the MIT License.
  */
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global.Master = factory());
-}(this, function () { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('jquery')) :
+  typeof define === 'function' && define.amd ? define(['jquery'], factory) :
+  (global.Jbind = factory(global.jquery));
+}(this, function ($) { 'use strict';
+
+  $ = 'default' in $ ? $['default'] : $;
 
   var noop = function() {};
   var defer = window.requestAnimationFrame ||
@@ -160,9 +162,7 @@
     alpaca: !!_alpaca
   };
 
-  var $ = require('jquery');
-
-  var _$1 = {
+  var util = {
     find: $.find,
     contains: $.contains,
     data: $.data,
@@ -1700,7 +1700,7 @@ var   cache$1 = new Cache(1000);
     return J;
   };
 
-  _$1.extend(_, _$1);
+  util.extend(_, util);
   var jbind = factory(_);
 
   return jbind;

@@ -1,8 +1,8 @@
 'use strict';
 
-var $ = require('jquery');
+import $ from 'jquery';
 
-export default {
+var util = {
   find: $.find,
   contains: $.contains,
   data: $.data,
@@ -12,3 +12,5 @@ export default {
   clone: $.clone,
   extend: $.extend
 };
+
+export default util;
