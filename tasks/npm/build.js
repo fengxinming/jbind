@@ -2,13 +2,13 @@
 
 const fs = require('fs');
 const rollup = require('rollup');
-const npm = require('rollup-plugin-node-resolve');
+// const npm = require('rollup-plugin-node-resolve');
 
 const version = process.env.VERSION || require('../../package.json').version
 
 const banner =
   '/*!\n' +
-  ' * Master.js v' + version + '\n' +
+  ' * jbind.js v' + version + '\n' +
   ' * (c) ' + (new Date()).getFullYear() + ' jesse\n' +
   ' * Released under the MIT License.\n' +
   ' */';
@@ -45,9 +45,9 @@ rollup.rollup({
       // umd – 适用于CommonJs和AMD风格通用模式
       format: 'umd',
       banner: banner,
-      moduleName: 'Jbind',
+      moduleName: 'jBind',
       globals: {
-        jquery: 'jquery'
+        jquery: 'jQuery'
       }
     }).code)
   })

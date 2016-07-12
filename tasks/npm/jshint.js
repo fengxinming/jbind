@@ -13,6 +13,7 @@ module.exports = co.wrap(function*(src) {
       .on('error', function(err) {
         reject(err);
       }).on('end', function() {
+        console.log(src, 'js语法检查完成');
         resolve();
       })
       .pipe(jshint.reporter(stylish));
