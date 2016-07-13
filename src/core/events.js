@@ -1,6 +1,5 @@
 'use strict';
 
-import Data from './data';
 import _ from './utils';
 
 function emit(key, args, target) {

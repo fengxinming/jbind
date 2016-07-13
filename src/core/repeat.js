@@ -90,7 +90,7 @@ export default function() {
   target = _.get(namespace, key);
   readFilters = this.filters;
   repeats = [];
-  ref = document.createComment('q-repeat');
+  ref = document.createComment('j-repeat');
   vm = this.vm;
 
   parentNode.replaceChild(ref, tpl);

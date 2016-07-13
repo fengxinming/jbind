@@ -105,7 +105,8 @@ function parse(str) {
 
 function parseFilter(str, token) {
   var i, l = filterTokens.length,
-    has = false;
+    has = false,
+    captures, foo;
   while (str.length) {
     for (i = 0; i < l; i++) {
       if (captures = filterTokens[i][0].exec(str)) {

@@ -1,8 +1,12 @@
+'use strict';
+
+import Cache from './cache';
+
 var noop = function() {},
   defer = window.requestAnimationFrame ||
   window.webkitRequestAnimationFrame ||
   setTimeout,
-  cache = new(require('./cache'))(1000),
+  cache = new Cache(1000),
   //优先解析的指令
   priorities = ['vm', 'repeat', 'if'],
   _qtid = 0,

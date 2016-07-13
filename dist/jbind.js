@@ -1,21 +1,135 @@
 /*!
- * Master.js v1.0.0
+ * jbind.js v1.0.0
  * (c) 2016 jesse
  * Released under the MIT License.
  */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('jquery')) :
   typeof define === 'function' && define.amd ? define(['jquery'], factory) :
-  (global.Jbind = factory(global.jquery));
+  (global.jBind = factory(global.jQuery));
 }(this, function ($) { 'use strict';
 
   $ = 'default' in $ ? $['default'] : $;
+
+  /**
+   * A doubly linked list-based Least Recently Used (LRU)
+   * cache. Will keep most recently used items while
+   * discarding least recently used items when its limit is
+   * reached. This is a bare-bone version of
+   * Rasmus Andersson's js-lru:
+   *
+   *   https://github.com/rsms/js-lru
+   *
+   * @param {Number} limit
+   * @constructor
+   */
+
+  function Cache(limit) {
+    this.size = 0
+    this.limit = limit
+    this.head = this.tail = undefined
+    this._keymap = {}
+  }
+
+  var p = Cache.prototype
+
+  /**
+   * Put <value> into the cache associated with <key>.
+   * Returns the entry which was removed to make room for
+   * the new entry. Otherwise undefined is returned.
+   * (i.e. if there was enough room already).
+   *
+   * @param {String} key
+   * @param {*} value
+   * @return {Entry|undefined}
+   */
+
+  p.put = function(key, value) {
+    var removed
+
+    var entry = this.get(key, true)
+    if (!entry) {
+      if (this.size === this.limit) {
+        removed = this.shift()
+      }
+      entry = {
+        key: key
+      }
+      this._keymap[key] = entry
+      if (this.tail) {
+        this.tail.newer = entry
+        entry.older = this.tail
+      } else {
+        this.head = entry
+      }
+      this.tail = entry
+      this.size++
+    }
+    entry.value = value
+
+    return removed
+  }
+
+  /**
+   * Purge the least recently used (oldest) entry from the
+   * cache. Returns the removed entry or undefined if the
+   * cache was empty.
+   */
+
+  p.shift = function() {
+    var entry = this.head
+    if (entry) {
+      this.head = this.head.newer
+      this.head.older = undefined
+      entry.newer = entry.older = undefined
+      this._keymap[entry.key] = undefined
+      this.size--
+    }
+    return entry
+  }
+
+  /**
+   * Get and register recent use of <key>. Returns the value
+   * associated with <key> or undefined if not in cache.
+   *
+   * @param {String} key
+   * @param {Boolean} returnEntry
+   * @return {Entry|*}
+   */
+
+  p.get = function(key, returnEntry) {
+    var entry = this._keymap[key]
+    if (entry === undefined) return
+    if (entry === this.tail) {
+      return returnEntry ? entry : entry.value
+    }
+    // HEAD--------------TAIL
+    //   <.older   .newer>
+    //  <--- add direction --
+    //   A  B  C  <D>  E
+    if (entry.newer) {
+      if (entry === this.head) {
+        this.head = entry.newer
+      }
+      entry.newer.older = entry.older // C <-- E.
+    }
+    if (entry.older) {
+      entry.older.newer = entry.newer // C. --> E
+    }
+    entry.newer = undefined // D --x
+    entry.older = this.tail // D. --> E
+    if (this.tail) {
+      this.tail.newer = entry // E. <-- D
+    }
+    this.tail = entry
+    return returnEntry ? entry : entry.value
+  }
 
   var noop = function() {};
   var defer = window.requestAnimationFrame ||
     window.webkitRequestAnimationFrame ||
     setTimeout;
-  var cache = new(require('./cache'))(1000);
+  var cache = new Cache(1000);
   var priorities = ['vm', 'repeat', 'if'];
   var _slice = [].slice;
   var _alpaca = document.getElementsByTagName('html')[0];
@@ -252,94 +366,6 @@
     // 如果是数组对象，需要得到长度
     _isArray(data) && (this.length = _getLength(keys));
   }
-  _.extend(Data.prototype, {
-    /**
-     * 获取命名空间
-     */
-    $namespace: function(key) {
-      var keys = [],
-        self = this;
-      for (; self != undefined; self = self._up) {
-        self._namespace &&
-          keys.unshift(self._namespace);
-      }
-      if (key) {
-        keys.push(key);
-      }
-      return keys.join('.');
-    },
-    /**
-     * 获取父级命名空间
-     */
-    $key: function() {
-      var key = this._namespace;
-      return +key + '' === key ? +key : key;
-    },
-    /**
-     * 获取数据的父级对象
-     */
-    $up: function(num) {
-      num = num || 1;
-      for (var src = this; num--;) {
-        src = src['_up'];
-      }
-      return src;
-    },
-    /**
-     * 修改绑定的数据值
-     */
-    $set: function(key, value) {
-      if (typeof key === 'object') {
-        var self = this;
-        Object.keys(key).filter(function(k) {
-          return k.indexOf('_') !== 0;
-        }).forEach(function(k) {
-          _prefix(self, k, key[k], true);
-        });
-        this.$change(this.$namespace(key), this, undefined, 1);
-      } else {
-        var oldValue = this[key];
-        _prefix(this, key, value, true);
-        // just bubble
-        this.$change(this.$namespace(key), this[key], oldValue, undefined, -1);
-      }
-      return this;
-    },
-    /**
-     * 获取实际值
-     */
-    $get: function() {
-      var res, keys = this._keys,
-        self = this;
-      if (this instanceof Data) {
-        res = {};
-      } else {
-        res = [];
-      }
-      keys.forEach(function(key) {
-        res[key] = self[key] == null ?
-          self[key] :
-          self[key].$get ?
-          self[key].$get() :
-          self[key];
-      });
-      return res;
-    },
-    /**
-     * 数据改变时触发
-     * type = 0 just change
-     * type = 1 trigger change & deep
-     * type = -1 just deep
-     */
-    $change: function(key, value, oldVal, patch, type) {
-      type = type || 0;
-      var top = this._top;
-      if (top.$emit) {
-        ~type && this._top.$emit('data:' + key, value, oldVal, patch);
-        type && this._top.$emit('deep:' + key, value, oldVal, patch);
-      }
-    }
-  });
 
   /**
    * DataArray
@@ -350,131 +376,6 @@
   function DataArray(options) {
     Data.call(this, options);
   }
-  _.extend(DataArray.prototype, Data.prototype, {
-    /**
-     * push data
-     */
-    push: function(values) {
-      values = _.slice.call(arguments, 0);
-      var res = [];
-      for (var i = 0, l = values.length; i < l; i++) {
-        _prefix(this, this.length, values[i]);
-        this._keys.push(this.length);
-        res.push(this[this.length]);
-        this.length++;
-      }
-      // value, oldValue, patch
-      this.$change(this.$namespace(), this, null, {
-        method: 'push',
-        res: res,
-        args: values
-      }, 1);
-
-      return this;
-    },
-    /**
-     * pop data
-     */
-    pop: function() {
-      var res = this[--this.length];
-      delete this[this.length];
-      this._keys.pop();
-      this.$change(this.$namespace(), this, null, undefined, 1);
-      return res;
-    },
-    /**
-     * unshift
-     */
-    unshift: function(value) {
-      this._keys.push(this.length);
-      this.length++;
-      for (var l = this.length; l--;) {
-        this[l] = this[l - 1];
-        // fixed namespace
-        typeof this[l] === 'object' &&
-          (this[l]._namespace = l + '');
-      }
-      _prefix(this, 0, value);
-      this.$change(this.$namespace(), this, null, undefined, 1);
-      return this;
-    },
-    /**
-     * shift
-     */
-    shift: function() {
-      this.length--;
-      var res = this[0];
-      for (var i = 0, l = this.length; i < l; i++) {
-        this[i] = this[i + 1];
-        // fixed namespace
-        typeof this[i] === 'object' &&
-          (this[i]._namespace = i + '');
-      }
-      this._keys.pop();
-      delete this[this.length];
-      this.$change(this.$namespace(), this, null, undefined, 1);
-      return res;
-    },
-    /**
-     * touch
-     */
-    touch: function(key) {
-      this.$change(this.$namespace(key), this, null, undefined, 1);
-    },
-    /**
-     * indexOf
-     */
-    indexOf: function(item) {
-      if (item._up === this) {
-        var i = +item._namespace;
-        if (this[i] === item) return i;
-      } else if (typeof item !== 'object') {
-        for (var i = 0, l = this.length; i < l; i++) {
-          if (this[i] === item) return i;
-        }
-      }
-      return -1;
-    },
-    /**
-     * splice
-     */
-    splice: function(i, l /**, items support later **/ ) {
-      var patch = {
-        method: 'splice',
-        args: [i, l]
-      };
-      for (var j = 0, k = l + i, z = this.length - l; i < z; i++, j++) {
-        this[i] = this[k + j];
-        typeof this[i] === 'object' &&
-          (this[i]._namespace = i + '');
-      }
-      for (; i < this.length; i++) {
-        this[i] = null;
-        delete this[i];
-      }
-      this.length -= l;
-      this._keys.splice(this.length, l);
-      this.$change(this.$namespace(), this, null, patch, 1);
-    },
-    /**
-     * forEach
-     */
-    forEach: function(foo) {
-      for (var i = 0, l = this.length; i < l; i++) {
-        foo(this[i], i);
-      }
-    },
-    /**
-     * filter
-     */
-    filter: function(foo) {
-      var res = [];
-      this.forEach(function(item, i) {
-        if (foo(item)) res.push(item);
-      });
-      return res;
-    }
-  });
 
   /**
    * Seed
@@ -483,60 +384,280 @@
   function Seed(options) {
     Data.call(this, options);
   }
-  _.extend(Seed, {
-    Data: Data,
-    DataArray: DataArray
-  });
-  _.extend(Seed.prototype, Data.prototype, {
-    /**
-     * 设置值到元素上
-     *
-     * @param {String} key
-     * @param {*} value
-     * @returns {Data}
-     */
-    data: function(key, value) {
-      if (key === undefined) {
+
+  function initialize() {
+    _.extend(Data.prototype, {
+      /**
+       * 获取命名空间
+       */
+      $namespace: function(key) {
+        var keys = [],
+          self = this;
+        for (; self != undefined; self = self._up) {
+          self._namespace &&
+            keys.unshift(self._namespace);
+        }
+        if (key) {
+          keys.push(key);
+        }
+        return keys.join('.');
+      },
+      /**
+       * 获取父级命名空间
+       */
+      $key: function() {
+        var key = this._namespace;
+        return +key + '' === key ? +key : key;
+      },
+      /**
+       * 获取数据的父级对象
+       */
+      $up: function(num) {
+        num = num || 1;
+        for (var src = this; num--;) {
+          src = src['_up'];
+        }
+        return src;
+      },
+      /**
+       * 修改绑定的数据值
+       */
+      $set: function(key, value) {
+        if (typeof key === 'object') {
+          var self = this;
+          Object.keys(key).filter(function(k) {
+            return k.indexOf('_') !== 0;
+          }).forEach(function(k) {
+            _prefix(self, k, key[k], true);
+          });
+          this.$change(this.$namespace(key), this, undefined, 1);
+        } else {
+          var oldValue = this[key];
+          _prefix(this, key, value, true);
+          // just bubble
+          this.$change(this.$namespace(key), this[key], oldValue, undefined, -1);
+        }
         return this;
+      },
+      /**
+       * 获取实际值
+       */
+      $get: function() {
+        var res, keys = this._keys,
+          self = this;
+        if (this instanceof Data) {
+          res = {};
+        } else {
+          res = [];
+        }
+        keys.forEach(function(key) {
+          res[key] = self[key] == null ?
+            self[key] :
+            self[key].$get ?
+            self[key].$get() :
+            self[key];
+        });
+        return res;
+      },
+      /**
+       * 数据改变时触发
+       * type = 0 just change
+       * type = 1 trigger change & deep
+       * type = -1 just deep
+       */
+      $change: function(key, value, oldVal, patch, type) {
+        type = type || 0;
+        var top = this._top;
+        if (top.$emit) {
+          ~type && this._top.$emit('data:' + key, value, oldVal, patch);
+          type && this._top.$emit('deep:' + key, value, oldVal, patch);
+        }
       }
-      var i = 0,
-        l, data = this,
-        next;
-      if (~key.indexOf('.')) {
-        var keys = key.split('.');
-        for (l = keys.length; i < l - 1; i++) {
-          key = keys[i];
-          // number
-          if (+key + '' === key) {
-            key = +key;
+    });
+
+    _.extend(DataArray.prototype, Data.prototype, {
+      /**
+       * push data
+       */
+      push: function(values) {
+        values = _.slice.call(arguments, 0);
+        var res = [];
+        for (var i = 0, l = values.length; i < l; i++) {
+          _prefix(this, this.length, values[i]);
+          this._keys.push(this.length);
+          res.push(this[this.length]);
+          this.length++;
+        }
+        // value, oldValue, patch
+        this.$change(this.$namespace(), this, null, {
+          method: 'push',
+          res: res,
+          args: values
+        }, 1);
+
+        return this;
+      },
+      /**
+       * pop data
+       */
+      pop: function() {
+        var res = this[--this.length];
+        delete this[this.length];
+        this._keys.pop();
+        this.$change(this.$namespace(), this, null, undefined, 1);
+        return res;
+      },
+      /**
+       * unshift
+       */
+      unshift: function(value) {
+        this._keys.push(this.length);
+        this.length++;
+        for (var l = this.length; l--;) {
+          this[l] = this[l - 1];
+          // fixed namespace
+          typeof this[l] === 'object' &&
+            (this[l]._namespace = l + '');
+        }
+        _prefix(this, 0, value);
+        this.$change(this.$namespace(), this, null, undefined, 1);
+        return this;
+      },
+      /**
+       * shift
+       */
+      shift: function() {
+        this.length--;
+        var res = this[0];
+        for (var i = 0, l = this.length; i < l; i++) {
+          this[i] = this[i + 1];
+          // fixed namespace
+          typeof this[i] === 'object' &&
+            (this[i]._namespace = i + '');
+        }
+        this._keys.pop();
+        delete this[this.length];
+        this.$change(this.$namespace(), this, null, undefined, 1);
+        return res;
+      },
+      /**
+       * touch
+       */
+      touch: function(key) {
+        this.$change(this.$namespace(key), this, null, undefined, 1);
+      },
+      /**
+       * indexOf
+       */
+      indexOf: function(item) {
+        if (item._up === this) {
+          var i = +item._namespace;
+          if (this[i] === item) return i;
+        } else if (typeof item !== 'object') {
+          for (var i = 0, l = this.length; i < l; i++) {
+            if (this[i] === item) return i;
           }
-          if (key in data && data[key] != null) {
-            data = data[key];
-          } else if (value === undefined) {
-            // undefind
-            return undefined;
-          } else {
-            next = keys[i + 1];
-            // next is number
-            if (+next + '' == next) {
-              // array
-              _prefix(data, key, [], true);
+        }
+        return -1;
+      },
+      /**
+       * splice
+       */
+      splice: function(i, l /**, items support later **/ ) {
+        var patch = {
+          method: 'splice',
+          args: [i, l]
+        };
+        for (var j = 0, k = l + i, z = this.length - l; i < z; i++, j++) {
+          this[i] = this[k + j];
+          typeof this[i] === 'object' &&
+            (this[i]._namespace = i + '');
+        }
+        for (; i < this.length; i++) {
+          this[i] = null;
+          delete this[i];
+        }
+        this.length -= l;
+        this._keys.splice(this.length, l);
+        this.$change(this.$namespace(), this, null, patch, 1);
+      },
+      /**
+       * forEach
+       */
+      forEach: function(foo) {
+        for (var i = 0, l = this.length; i < l; i++) {
+          foo(this[i], i);
+        }
+      },
+      /**
+       * filter
+       */
+      filter: function(foo) {
+        var res = [];
+        this.forEach(function(item, i) {
+          if (foo(item)) res.push(item);
+        });
+        return res;
+      }
+    });
+
+    _.extend(Seed, {
+      Data: Data,
+      DataArray: DataArray
+    });
+    _.extend(Seed.prototype, Data.prototype, {
+      /**
+       * 设置值到元素上
+       *
+       * @param {String} key
+       * @param {*} value
+       * @returns {Data}
+       */
+      data: function(key, value) {
+        if (key === undefined) {
+          return this;
+        }
+        var i = 0,
+          l, data = this,
+          next;
+        if (~key.indexOf('.')) {
+          var keys = key.split('.');
+          for (l = keys.length; i < l - 1; i++) {
+            key = keys[i];
+            // number
+            if (+key + '' === key) {
+              key = +key;
+            }
+            if (key in data && data[key] != null) {
+              data = data[key];
+            } else if (value === undefined) {
+              // undefind
+              return undefined;
             } else {
-              // object
-              _prefix(data, key, {}, true);
+              next = keys[i + 1];
+              // next is number
+              if (+next + '' == next) {
+                // array
+                _prefix(data, key, [], true);
+              } else {
+                // object
+                _prefix(data, key, {}, true);
+              }
             }
           }
         }
+        l && (key = keys[i]);
+        // 如果 data === undefined, 就返回结果
+        if (value === undefined) {
+          return data && key ? data[key] : data;
+        }
+        data.$set(key, value);
+        return data[key];
       }
-      l && (key = keys[i]);
-      // 如果 data === undefined, 就返回结果
-      if (value === undefined) {
-        return data && key ? data[key] : data;
-      }
-      data.$set(key, value);
-      return data[key];
-    }
-  });
+    });
+
+    return Seed;
+  }
 
   function emit(key, args, target) {
     // 触发事件
@@ -735,7 +856,7 @@
     target = _.get(namespace, key);
     readFilters = this.filters;
     repeats = [];
-    ref = document.createComment('q-repeat');
+    ref = document.createComment('j-repeat');
     vm = this.vm;
 
     parentNode.replaceChild(ref, tpl);
@@ -1096,120 +1217,6 @@
     extend: _extend
   };
 
-  /**
-   * A doubly linked list-based Least Recently Used (LRU)
-   * cache. Will keep most recently used items while
-   * discarding least recently used items when its limit is
-   * reached. This is a bare-bone version of
-   * Rasmus Andersson's js-lru:
-   *
-   *   https://github.com/rsms/js-lru
-   *
-   * @param {Number} limit
-   * @constructor
-   */
-
-  function Cache(limit) {
-    this.size = 0
-    this.limit = limit
-    this.head = this.tail = undefined
-    this._keymap = {}
-  }
-
-  var p = Cache.prototype
-
-  /**
-   * Put <value> into the cache associated with <key>.
-   * Returns the entry which was removed to make room for
-   * the new entry. Otherwise undefined is returned.
-   * (i.e. if there was enough room already).
-   *
-   * @param {String} key
-   * @param {*} value
-   * @return {Entry|undefined}
-   */
-
-  p.put = function(key, value) {
-    var removed
-
-    var entry = this.get(key, true)
-    if (!entry) {
-      if (this.size === this.limit) {
-        removed = this.shift()
-      }
-      entry = {
-        key: key
-      }
-      this._keymap[key] = entry
-      if (this.tail) {
-        this.tail.newer = entry
-        entry.older = this.tail
-      } else {
-        this.head = entry
-      }
-      this.tail = entry
-      this.size++
-    }
-    entry.value = value
-
-    return removed
-  }
-
-  /**
-   * Purge the least recently used (oldest) entry from the
-   * cache. Returns the removed entry or undefined if the
-   * cache was empty.
-   */
-
-  p.shift = function() {
-    var entry = this.head
-    if (entry) {
-      this.head = this.head.newer
-      this.head.older = undefined
-      entry.newer = entry.older = undefined
-      this._keymap[entry.key] = undefined
-      this.size--
-    }
-    return entry
-  }
-
-  /**
-   * Get and register recent use of <key>. Returns the value
-   * associated with <key> or undefined if not in cache.
-   *
-   * @param {String} key
-   * @param {Boolean} returnEntry
-   * @return {Entry|*}
-   */
-
-  p.get = function(key, returnEntry) {
-    var entry = this._keymap[key]
-    if (entry === undefined) return
-    if (entry === this.tail) {
-      return returnEntry ? entry : entry.value
-    }
-    // HEAD--------------TAIL
-    //   <.older   .newer>
-    //  <--- add direction --
-    //   A  B  C  <D>  E
-    if (entry.newer) {
-      if (entry === this.head) {
-        this.head = entry.newer
-      }
-      entry.newer.older = entry.older // C <-- E.
-    }
-    if (entry.older) {
-      entry.older.newer = entry.newer // C. --> E
-    }
-    entry.newer = undefined // D --x
-    entry.older = this.tail // D. --> E
-    if (this.tail) {
-      this.tail.newer = entry // E. <-- D
-    }
-    this.tail = entry
-    return returnEntry ? entry : entry.value
-  }
-
 var   cache$1 = new Cache(1000);
   var tokens = [
       // space
@@ -1315,7 +1322,8 @@ var   cache$1 = new Cache(1000);
 
   function parseFilter(str, token) {
     var i, l = filterTokens.length,
-      has = false;
+      has = false,
+      captures, foo;
     while (str.length) {
       for (i = 0; i < l; i++) {
         if (captures = filterTokens[i][0].exec(str)) {
@@ -1380,7 +1388,8 @@ var   cache$1 = new Cache(1000);
   function factory(_) {
 
     var MARK = /\{\{(.+?)\}\}/,
-      _doc = document;
+      _doc = document,
+      Seed = initialize();
 
     function _inDoc(ele) {
       return _.contains(_doc.documentElement, ele);

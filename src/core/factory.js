@@ -1,4 +1,9 @@
-import Seed from './data';
+'use strict';
+
+import {
+  initSeed
+}
+from './data';
 import events from './events';
 import directives from './directives';
 import clas from './class';
@@ -11,7 +16,8 @@ from './strats';
 export default function(_) {
 
   var MARK = /\{\{(.+?)\}\}/,
-    _doc = document;
+    _doc = document,
+    Seed = initSeed();
 
   function _inDoc(ele) {
     return _.contains(_doc.documentElement, ele);

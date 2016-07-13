@@ -78,7 +78,7 @@
       listVm.$set('dealImg', 'show');
     }
 
-    toolVm = new Jbind({
+    toolVm = new jBind({
       el: '#manage-tool-mod',
       data: {
         isShow: true,
