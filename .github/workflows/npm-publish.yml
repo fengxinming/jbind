@@ -41,7 +41,6 @@ jobs:
         with:
           version: 10
       - run: npm run deps            # 构建 starter 依赖
-      - run: npm run build:all       # 构建所有包
       - run: npm run release:all     # 发布所有包
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
