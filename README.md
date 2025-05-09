@@ -1,4 +1,4 @@
-# **util**
+# **browser-collection**
 
 > A lightweight, modular collection of utility libraries providing practical functions for common development scenarios, with TypeScript support.
 
