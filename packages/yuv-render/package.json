@@ -10,8 +10,7 @@
   "scripts": {
     "build": "vite build",
     "prepublishOnly": "npm run build",
-    "release": "pnpm publish --no-git-checks",
-    "test": "vitest run --coverage"
+    "release": "pnpm publish --no-git-checks"
   },
   "keywords": [
     "yuv",
