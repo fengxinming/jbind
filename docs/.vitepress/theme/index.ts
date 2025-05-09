@@ -1,0 +1,19 @@
+// https://vitepress.dev/guide/custom-theme
+// eslint-disable-next-line simple-import-sort/imports
+import type { Theme } from 'vitepress';
+import DefaultTheme from 'vitepress/theme';
+import { h } from 'vue';
+import './style.css';
+import RenderYUV from '../../components/RenderYUV.vue';
+
+export default {
+  extends: DefaultTheme,
+  Layout: () => {
+    return h(DefaultTheme.Layout, null, {
+      // https://vitepress.dev/guide/extending-default-theme#layout-slots
+    });
+  },
+  enhanceApp({ app }) {
+    app.component('RenderYUV', RenderYUV);
+  }
+} satisfies Theme;

@@ -1,40 +1,45 @@
 {
-  "name": "jbind",
-  "description": "javascript framework",
-  "version": "1.0.0",
-  "main": "dist/jbind.js",
-  "directories": {
-    "test": "test"
-  },
+  "name": "browser-collection",
+  "private": true,
   "devDependencies": {
-    "co": "^4.6.0",
-    "glob-watcher": "^3.0.0",
-    "gulp-jshint": "^2.0.1",
-    "jshint": "^2.9.2",
-    "jshint-stylish": "^2.2.0",
-    "rollup": "^0.33.0",
-    "rollup-plugin-babel": "^2.6.1",
-    "rollup-plugin-node-resolve": "^1.7.1",
-    "vinyl-fs": "^2.4.3"
+    "@commitlint/cli": "^19.2.0",
+    "@commitlint/config-conventional": "^19.1.0",
+    "eslint": "^8.57.0",
+    "eslint-config-fe": "^2.1.3",
+    "eslint-plugin-simple-import-sort": "^12.1.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
+    "stylus": "^0.64.0"
   },
   "scripts": {
-    "test": "mocha",
-    "build": "node ./tasks/npm/build.js",
-    "dev": "node ./tasks/npm/dev.js"
+    "deps": "npm run clean && pnpm install",
+    "clean": "rm -rf node_modules ./*/*/node_modules",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "eslint": "eslint --ext .js,.mjs,.jsx,.ts,.tsx --fix --ignore-path .eslintignore ./",
+    "build:all": "pnpm run --parallel --filter=./packages/* build",
+    "test:all": "pnpm run --parallel --filter=./packages/* test",
+    "release:all": "publish-pkgs ./packages/*",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@types/audioworklet": "^0.0.75",
+    "markdown-it-mathjax3": "^4.3.2",
+    "mermaid": "^11.6.0",
+    "publish-pkgs": "^1.0.1",
+    "vitepress": "^1.6.3",
+    "vitepress-plugin-group-icons": "^1.3.8",
+    "vitepress-plugin-mermaid": "^2.0.17"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fengxinming/jbind.git"
+    "url": "git+ssh://git@github.com/fengxinming/browser-collection.git"
   },
-  "keywords": [
-    "jbind",
-    "jbind-js",
-    "jbind.js"
-  ],
-  "author": "fengxinming",
+  "author": "Jesse Feng <fxm0016@126.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/fengxinming/jbind/issues"
+    "url": "https://github.com/fengxinming/browser-collection/issues"
   },
-  "homepage": "https://github.com/fengxinming/jbind#readme"
+  "homepage": "https://fengxinming.github.io/browser-collection/"
 }
